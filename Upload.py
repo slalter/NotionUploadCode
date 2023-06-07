@@ -109,8 +109,8 @@ def main(request):
 
     print(eList.eString)
     #if(eList.eString == ''):
-    #    print(flask.make_response('',200))
+    #    return flask.make_response('',200)
     #else:
-    #    print(flask.make_response(eList.eString, 500))
+    #    print flask.make_response(eList.eString, 500)
 
 main(NULL)
