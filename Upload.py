@@ -29,21 +29,21 @@ class eList:
 #to be added to the parent directory as a new thing... and then all children need to point to the backupid of their fake parent. Abstracted, this will allow dynamic recovery options.
 def jsonUpNotion(jsonfile, headers):
     f = jsonfile
-    datajson = json.dumps(clean(f.read()))
-    print(datajson)
+    dataDict = clean(f.read()) #cleaned returns a dictonary
     try:
-        response = requests.post("https://api.notion.com/v1/databases",headers=headers, data=datajson)
-        print(response.text + "code: " +response.status_code)
+        response = requests.post("https://api.notion.com/v1/pages",headers=headers, data=json.dumps(dataDict))
+        print(response.text + "code: " + response.status_code.__str__())
     except Exception as e:
-        eList.add("failed to upload json "  + " due to " + e.__str__())
+        eList.add("failed to upload json "  + " due to " +  e.__str__())
     try:
         return response
     except:
         eList.add("request failed.")
-        return NULL
+        return flask.make_response("http request failed ", 532)
 
-#pull only the data that we need to upload to notion
+#delete data that cannot be uploaded
 def clean(jsonFile):
+    #delete data that cannot be uploaded
     cleaned = json.loads(jsonFile)
     delCats = ['last_edited_time','rollup','created_by','created_time','last_edited_by','last_edited_time']
     for i in delCats:
@@ -51,7 +51,17 @@ def clean(jsonFile):
             del cleaned[i]
         except:
             pass
+    
+    #if parent is workspace, make parent the BACKUPS page
+    if(cleaned["parent"].__str__()=="{'type': 'workspace', 'workspace': True}"):
+        cleaned["parent"] = {"page_id": "f33994e861a14f6fae8cee8cb6b15bdf"}
+        print("parent changed from workspace to BACKUPS.")
+
+    #set icon to smiley face becuase dynamically loaded ones aren't supported here
+    cleaned["icon"]={"emoji": "😀"}
+
     return cleaned
+ 
 
 
 def main(request):
@@ -68,10 +78,34 @@ def main(request):
     #storage_client = storage.Client()
     #bucket_name = "notionbackups"
 
-    f = open("ee0ffb5c-dd32-4d15-8841-b965be51fd23.json", "r")
+
+    #path to backup jsons
+    backuppath = os.path.join(os.getcwd(), "backuptest/")
+
+    #dynamic nextFolders list containing paths to folders
+    nextFolders = [backuppath]
+
+    #upload all jsons layer by layer
+    while(len(nextFolders)!=0):
+        for filename in os.listdir(nextFolders[0]):
+            if(os.path.isfile(os.path.join(backuppath, filename))):
+                try:
+                    f = open(os.path.join(backuppath, filename),"r")
+                    if(jsonUpNotion(f, headers).status_code != 200):
+                        eList.add("failed to upload file: " + filename)
+                except Exception as e:
+                    eList.add("exception uploading file " + filename + e.__str__())
+                try:
+                    f.close()
+                except:
+                    pass
+            else:
+                nextFolders.append(os.path.join(backuppath, filename))
+            nextFolders.remove(nextFolders[0])
+
+    
     
 
-    jsonUpNotion(f,headers)
 
     print(eList.eString)
     #if(eList.eString == ''):
