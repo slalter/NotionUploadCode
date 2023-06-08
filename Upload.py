@@ -68,7 +68,6 @@ def main(request):
 
     #key
     #SECRET = os.environ.get('NOTION_KEY_BACKUP').__str__()
-    SECRET = 'secret_dQsLC3pigquE7Q7SLZvo8evKxzxp8QLdsB4weQdvNSy'
     headers = {
     'Authorization': 'Bearer '+ SECRET,
     'Notion-Version': '2022-06-28',
